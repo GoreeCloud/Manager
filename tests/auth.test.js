@@ -68,6 +68,7 @@ test("Manager browser has a fail-closed tab-return session check and revision gu
   // Source-level regression only; real tab/session/cookie browser acceptance remains separate.
   const app = readFileSync(new URL("../public/app.js", import.meta.url), "utf8");
   assert.match(app, /fetch\("\/api\/session"/);
+  assert.match(app, /session\?\.authenticated === true/);
   assert.match(app, /window\.addEventListener\("focus"/);
   assert.match(app, /window\.addEventListener\("pageshow"/);
   assert.match(app, /document\.addEventListener\("visibilitychange"/);

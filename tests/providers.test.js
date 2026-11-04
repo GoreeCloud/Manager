@@ -64,3 +64,24 @@ test("Upstream HTTP failures are normalized and reject redirects", async () => {
   await assert.rejects(() => readJson("http://example.com"));
   await assert.rejects(() => readJson("https://api.github.com/example", {}, async () => new Response("no", { status: 403 })));
 });
+
+test("OpenAI reports malformed responses as errors rather than connected zeros", async () => {
+  await assert.rejects(() => openai({ OPENAI_ADMIN_KEY: "dummy" }, async () => ok({ data: null })));
+});
+test("OpenAI marks paginated usage data incomplete", async () => {
+  const now = Date.parse("2026-11-04T13:00:00Z");
+  const data = await openai({ OPENAI_ADMIN_KEY: "dummy" }, async url => {
+    if (url.includes("/costs?")) return ok({ data: [{ start_time: 1793750400, results: [] }], has_more: false });
+    return ok({ data: [{ results: [{ input_tokens: 25, output_tokens: 10, num_model_requests: 1 }] }], has_more: true });
+  }, now);
+  assert.equal(data.partial, true);
+  assert.equal(data.requests, 1);
+});
+
+test("Upstream JSON reader enforces response-size bounds", async () => {
+  const big = "x".repeat(1_500_100);
+  await assert.rejects(() => readJson("https://api.github.com/big", {}, async () =>
+    new Response(JSON.stringify({ value: big }), { headers: { "content-type": "application/json" } })));
+  await assert.rejects(() => readJson("https://api.github.com/big", {}, async () =>
+    new Response("{}", { headers: { "content-type": "application/json", "content-length": "1500001" } })));
+});

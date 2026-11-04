@@ -4,6 +4,7 @@ const refresh = $("#refresh");
 const notice = $("#notice");
 let snapshot = null;
 let controller = null;
+let dataRevision = 0;
 const names = {
   github: ["GitHub", "Code & repositories", "⌘", "https://github.com/GoreeCloud"],
   cloudflare: ["Cloudflare Pages", "Deployments & projects", "▤", "https://dash.cloudflare.com/"],
@@ -216,6 +217,7 @@ function render() {
 async function load() {
   if (controller) controller.abort();
   controller = new AbortController();
+  const revision = ++dataRevision;
   refresh.disabled = true;
   notice.hidden = true;
   $("#overall-status").textContent = "Refreshing provider data";
@@ -224,6 +226,7 @@ async function load() {
     if (res.status === 401) throw new Error("A valid Cloudflare Access session is required. Configure or sign in to the protected application.");
     if (!res.ok) throw new Error("Unable to load dashboard data (HTTP " + res.status + ").");
     const result = await res.json();
+    if (revision !== dataRevision) return;
     if (!Array.isArray(result.sources) || result.readOnly !== true) throw new Error("Unexpected dashboard response.");
     snapshot = result;
     const connected = result.sources.filter(s => s.status === "connected").length;
@@ -235,7 +238,7 @@ async function load() {
     }
     render();
   } catch (error) {
-    if (error.name === "AbortError") return;
+    if (revision !== dataRevision || error.name === "AbortError") return;
     snapshot = null;
     $("#overall-status").textContent = "Dashboard unavailable";
     $("#sync-time").textContent = "No verified data";
@@ -243,8 +246,38 @@ async function load() {
     notice.textContent = error.message;
     render();
   } finally {
-    refresh.disabled = false;
+    if (revision === dataRevision) refresh.disabled = false;
   }
+}
+
+// An Access check on returning to the tab prevents stale private dashboard DOM
+// from remaining visible after a separate logout or expired identity session.
+// This endpoint makes no provider requests; network uncertainty fails closed.
+async function validateVisibleSession() {
+  if (!snapshot || document.visibilityState === "hidden") return;
+  const revision = dataRevision;
+  try {
+    const response = await fetch("/api/session", { credentials: "same-origin", cache: "no-store" });
+    if (revision !== dataRevision) return; // A newer overview refresh owns the state.
+    // A login page, static fallback or malformed 200 is NOT an authenticated API response.
+    if (response.ok) {
+      const session = await response.json();
+      if (revision !== dataRevision) return;
+      if (session?.authenticated === true) return;
+    }
+  } catch {
+    // A failed session check cannot establish continued authorization.
+  }
+  if (revision !== dataRevision) return;
+  dataRevision++;
+  if (controller) controller.abort();
+  snapshot = null;
+  refresh.disabled = false;
+  $("#overall-status").textContent = "Private session unavailable";
+  $("#sync-time").textContent = "Private data cleared";
+  notice.hidden = false;
+  notice.textContent = "Your private session could not be verified. Sign in again and refresh to load current data.";
+  render();
 }
 function theme(mode) {
   document.documentElement.dataset.theme = mode;
@@ -258,4 +291,9 @@ theme(initialMode);
 $("#theme-toggle").addEventListener("click", () => theme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
 refresh.addEventListener("click", load);
 window.addEventListener("hashchange", render);
+window.addEventListener("focus", () => { void validateVisibleSession(); });
+window.addEventListener("pageshow", () => { void validateVisibleSession(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") void validateVisibleSession();
+});
 load();

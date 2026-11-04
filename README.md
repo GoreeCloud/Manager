@@ -66,7 +66,8 @@ Requires Node.js 20+ for checks/tests; the application itself has no install-tim
 ```bash
 npm run check
 npm test
-npm run verify:anonymous # expected to fail until the protected live site exists
+npm run verify:pages-project # read-only Wrangler project inventory; fails until verified Git-linked project exists
+npm run verify:anonymous   # expected to fail until the protected live site exists
 ```
 
 To run Pages Functions locally, install an audited, pinned Wrangler release in your development environment and use `wrangler pages dev public`. Without a valid signed Cloudflare Access token the entire application intentionally returns 401, including in local development. Tests exercise the authorization boundary with generated test keys and fake provider responses; no production credentials are used. The static UI can be served independently, but it will correctly show an unavailable state without the secured API.

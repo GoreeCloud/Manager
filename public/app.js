@@ -128,6 +128,26 @@ function repositoryPanel(limit) {
   if (gh?.truncated) panel.append(element("p", "panel-caption", "Showing a capped subset; totals may be incomplete."));
   return panel;
 }
+function workflowPanel() {
+  const gh = source("github").data;
+  const panel = makePanel("Recent workflow runs", "Latest public GitHub Actions activity · " + (gh?.workflowRepository || "Manager"));
+  if (!gh || gh.workflowRuns === null || gh.workflowRuns === undefined) {
+    panel.append(empty("Workflow activity unavailable", "GitHub Actions could not be retrieved. Repository data is still shown independently."));
+    return panel;
+  }
+  panel.append(table(["Workflow", "Branch", "Result", "Updated"], gh.workflowRuns.map(run => {
+    const result = run.conclusion || run.status || "unknown";
+    const state = result === "success" ? "connected" :
+      ["failure", "cancelled", "timed_out", "startup_failure"].includes(result) ? "error" : "unconfigured";
+    return [
+      append(element("div", "name-cell"), linkNode(run.name, run.url, "https://github.com/")),
+      run.branch || "—",
+      element("span", "status-tag " + state, result.replaceAll("_", " ")),
+      when(run.updatedAt),
+    ];
+  }), "No workflow runs", "GitHub reported no recent workflow runs for this repository."));
+  return panel;
+}
 function deploymentPanel() {
   const panel = makePanel("Pages projects", "Latest deployment reported by Cloudflare");
   const cf = source("cloudflare").data;
@@ -183,7 +203,7 @@ function render() {
     const split = element("div", "split-grid"); append(split, chart(), providersPanel());
     append(content, sectionHeading("Your workspace"), split, repositoryPanel(6));
   } else if (view === "github") {
-    append(content, sectionHeading("GitHub repositories"), repositoryPanel(12));
+    append(content, sectionHeading("GitHub repositories"), repositoryPanel(12), sectionHeading("GitHub Actions"), workflowPanel());
   } else if (view === "deployments") {
     append(content, sectionHeading("Cloudflare Pages"), deploymentPanel());
   } else if (view === "usage") {

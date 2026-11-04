@@ -10,6 +10,7 @@ const ok = data => new Response(JSON.stringify(data), { status: 200, headers: { 
 test("GitHub aggregates public, non-archived repositories without assuming a token", async () => {
   let requested;
   const fetcher = async (url, init) => {
+    if (url.includes("/actions/runs?")) return ok({ workflow_runs: [] });
     requested = { url, init };
     return ok([
       { name: "Manager", description: "Manager", html_url: "https://github.com/GoreeCloud/Manager", pushed_at: "2026-11-04T12:00:00Z", private: false, archived: false, stargazers_count: 7, open_issues_count: 2, language: "JavaScript" },

@@ -13,12 +13,12 @@ Manager aggregates provider read results. The existing [GoreeCloud GitHub Dashbo
 
 | Integration | Read-only information | Configuration |
 | --- | --- | --- |
-| GitHub | Public repositories, total stars, GitHub open work-item count (issues and PRs), language, latest push, repository links | Public without token; optional read-only token to raise API limits |
+| GitHub | Public repositories, stars, open work-item count (issues and PRs), language, last push, repository links, and five recent public Actions workflow runs | Public without token; optional read-only token with Actions read access for higher API limits |
 | Cloudflare Pages | Up to 100 projects, last reported deployment state, branch and time | Cloudflare account ID and **Pages:Read** API token |
 | OpenAI | Seven UTC calendar-day cost totals, completion request counts, input/output tokens, daily cost chart | **Organization admin key** (current provider API constraint) |
 | Connected sources | Individual connected / error / not configured states | Derived from actual API responses |
 
-Missing data is never replaced with fabricated numbers. Source totals may be truncated or delayed as documented by their APIs. Refresh requests run concurrently, but one failing provider does not erase the others. No infrastructure controls, deployment actions, GitHub mutations, or OpenAI generation endpoints exist in this app.
+Missing data is never replaced with fabricated numbers. Source totals may be truncated or delayed as documented by their APIs. Refresh requests run concurrently, but one failing provider does not erase the others. GitHub Actions workflow errors are isolated from successful GitHub repository summaries; workflow activity defaults to `GoreeCloud/Manager` and may target another public repository with `GITHUB_ACTIONS_REPO`. No infrastructure controls, deployment actions, GitHub mutations, or OpenAI generation endpoints exist in this app.
 
 ## Architecture
 

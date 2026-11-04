@@ -43,3 +43,44 @@ test("Validates Access JWT signature, audience, expiry and issuer", async () => 
   await assert.rejects(() => verifyAccessJwt(badAudience, env, { now, fetcher, subtle: webcrypto.subtle }));
   await assert.rejects(() => verifyAccessJwt(expired, env, { now, fetcher, subtle: webcrypto.subtle }));
 });
+
+test("Access signing-key rotation refreshes a bounded JWKS cache", async () => {
+  const environment = { CF_ACCESS_TEAM_DOMAIN: "rotation-test.cloudflareaccess.com", CF_ACCESS_AUD: "rotation-audience" };
+  const keys = await Promise.all(["old", "new"].map(async kid => {
+    const pair = await webcrypto.subtle.generateKey(
+      { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+      true, ["sign", "verify"],
+    );
+    const jwk = await webcrypto.subtle.exportKey("jwk", pair.publicKey);
+    return { kid, pair, jwk: { ...jwk, kid } };
+  }));
+  const at = 1793795000;
+  const sign = async (entry, kid = entry.kid) => {
+    const header = b64(JSON.stringify({ alg: "RS256", kid }));
+    const claims = b64(JSON.stringify({
+      iss: "https://" + environment.CF_ACCESS_TEAM_DOMAIN,
+      aud: [environment.CF_ACCESS_AUD], sub: "rotation-viewer", exp: at + 500,
+    }));
+    const signingInput = header + "." + claims;
+    const signature = await webcrypto.subtle.sign("RSASSA-PKCS1-v1_5", entry.pair.privateKey, enc.encode(signingInput));
+    return signingInput + "." + b64(signature);
+  };
+  let published = keys[0].jwk;
+  let requests = 0;
+  const fetcher = async () => {
+    requests++;
+    return new Response(JSON.stringify({ keys: [published] }), { headers: { "content-type": "application/json" } });
+  };
+  const opts = now => ({ now, fetcher, subtle: webcrypto.subtle });
+  assert.equal((await verifyAccessJwt(await sign(keys[0]), environment, opts(at))).sub, "rotation-viewer");
+  assert.equal(requests, 1);
+  published = keys[1].jwk;
+  // No network refresh is allowed for unknown key IDs within the cooldown.
+  await assert.rejects(verifyAccessJwt(await sign(keys[1]), environment, opts(at + 10)));
+  assert.equal(requests, 1);
+  assert.equal((await verifyAccessJwt(await sign(keys[1]), environment, opts(at + 40))).sub, "rotation-viewer");
+  assert.equal(requests, 2);
+  // The old token is no longer verifiable after an upstream key rotation.
+  await assert.rejects(verifyAccessJwt(await sign(keys[0]), environment, opts(at + 41)));
+  assert.equal(requests, 2);
+});

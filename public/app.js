@@ -7,13 +7,14 @@ let controller = null;
 const names = {
   github: ["GitHub", "Code & repositories", "⌘", "https://github.com/GoreeCloud"],
   cloudflare: ["Cloudflare Pages", "Deployments & projects", "▤", "https://dash.cloudflare.com/"],
+  openrouter: ["OpenRouter", "Usage snapshot", "◉", "https://openrouter.ai/"],
   openai: ["OpenAI API", "Usage & organization costs", "✧", "https://platform.openai.com/usage"],
 };
 const pages = {
   overview: ["Overview", "Infrastructure, in focus", "One clear view across your code, deployments, and API activity."],
   github: ["GitHub", "Your code universe", "Repository activity and health, straight from GitHub."],
   deployments: ["Deployments", "Every deployment, visible", "Your Cloudflare Pages projects and their last reported deployment."],
-  usage: ["API usage", "Understand your usage", "Organization-level OpenAI token consumption and cost."],
+  usage: ["API usage", "Understand your usage", "Model provider spend, usage and account-level reporting."],
   connections: ["Connections", "One connected ecosystem", "Live provider state, permissions, and setup guidance."],
 };
 function element(tag, cls, value) {
@@ -60,14 +61,17 @@ function stat(label, value, foot, glyph) {
   return append(box, top, element("p", "stat-value", value), element("p", "stat-foot", foot));
 }
 function stats() {
-  const gh = source("github").data, cf = source("cloudflare").data, ai = source("openai").data;
+  const gh = source("github").data, cf = source("cloudflare").data, ai = source("openai").data, router = source("openrouter").data;
   const grid = element("section", "stats-grid");
   grid.setAttribute("aria-label", "Key metrics");
+  grid.classList.add("overview-stats");
   return append(grid,
     stat("Public repositories", gh ? fmt(gh.repositoryCount) + (gh.truncated ? "+" : "") : "—", gh ? "Active public repositories" : "GitHub data unavailable", "⌘"),
     stat("Pages projects", cf ? fmt(cf.projectCount) + (cf.truncated ? "+" : "") : "—", cf ? "Visible Cloudflare projects" : "Connect Cloudflare Pages", "▤"),
     stat("7-day API cost", ai ? money(ai.costUsd) : "—", ai ? (ai.partial ? "Partial data available" : "OpenAI organization costs") : "Connect OpenAI API", "◈"),
-    stat("API requests", ai ? fmt(ai.requests) : "—", ai ? "Completions · last 7 days" : "OpenAI usage unavailable", "↗"));
+    stat("API requests", ai ? fmt(ai.requests) : "—", ai ? "Completions · last 7 days" : "OpenAI usage unavailable", "↗"),
+    stat("OpenRouter week", router ? money(router.key?.weeklyUsd) : "—", "Current API key · weekly spend", "◉"),
+    stat("OpenRouter remaining", router ? money(router.key?.limitRemainingUsd) : "—", "Current key spending limit", "◎"));
 }
 function chart() {
   const pane = makePanel("API spend", "Reported daily organization costs · USD");
@@ -94,7 +98,7 @@ function chart() {
 }
 function providersPanel() {
   const panel = makePanel("Connected sources", "A live view of your integrations");
-  ["github", "cloudflare", "openai"].forEach(key => panel.append(sourceRow(key)));
+  Object.keys(names).forEach(key => panel.append(sourceRow(key)));
   return panel;
 }
 function linkNode(text, href, prefix) {
@@ -174,12 +178,59 @@ function usagePanel() {
   if (!ai) panel.append(empty("OpenAI reporting not connected", "This feature needs an organization admin key stored as an encrypted Cloudflare Pages secret."));
   return panel;
 }
+function openrouterPanel() {
+  const router = source("openrouter").data;
+  const keyPanel = makePanel("Key-level usage", "OpenRouter · authenticated key only · USD");
+  if (router?.key) {
+    const key = router.key;
+    const grid = element("div", "stats-grid");
+    append(grid,
+      stat("Today", money(key.dailyUsd), "Current UTC day", "◷"),
+      stat("This week", money(key.weeklyUsd), "Weekly key spend", "◉"),
+      stat("This month", money(key.monthlyUsd), "Monthly key spend", "◈"),
+      stat("Lifetime", money(key.usageUsd), "This key only", "⌁"));
+    keyPanel.append(grid);
+    keyPanel.append(element("p", "detail-heading", key.limitUsd === null
+      ? "No spending limit was reported for this key."
+      : "Key limit: " + money(key.limitUsd) + " · Remaining: " +
+        money(key.limitRemainingUsd) + (key.limitReset ? " · Resets " + key.limitReset : "")));
+  } else {
+    keyPanel.append(empty("Key usage not available",
+      "A dedicated, spend-limited OpenRouter key is required for this report."));
+  }
+  const accountPanel = makePanel("Account reporting", "Optional management-level reports · USD");
+  if (router?.credits || router?.activity) {
+    const grid = element("div", "stats-grid");
+    append(grid,
+      stat("Purchased", money(router.credits?.purchasedUsd), "Account credits", "◈"),
+      stat("Lifetime used", money(router.credits?.lifetimeUsageUsd), "Account usage", "$"),
+      stat("Available", money(router.credits?.availableUsd), "Account balance", "◉"),
+      stat("30-day spend", money(router.activity?.spendUsd), "30 completed UTC days", "◷"));
+    accountPanel.append(grid);
+    if (router.activity) {
+      const activity = router.activity;
+      accountPanel.append(element("p", "detail-heading",
+        "30 completed UTC days · " + fmt(activity.requests) + " requests · " +
+        fmt(activity.inputTokens) + " input tokens · " + fmt(activity.outputTokens) + " output tokens"));
+      accountPanel.append(table(["Model", "Requests", "Spend"], (activity.topModels || []).map(row => [
+        element("span", "name-cell", row.model), fmt(row.requests), money(row.spendUsd),
+      ]), "No model details", "No model activity was returned for the period."));
+    }
+  } else {
+    accountPanel.append(empty("Account reporting not connected",
+      "A separately authorized OpenRouter management key is required for credits and activity."));
+  }
+  if (router?.partial) accountPanel.append(element("p", "detail-heading",
+    "Some reports failed. Unavailable values are not displayed as zero."));
+  return [keyPanel, accountPanel];
+}
 function connections() {
   const group = element("div", "connection-grid");
-  for (const key of ["github", "cloudflare", "openai"]) {
+  for (const key of Object.keys(names)) {
     const data = source(key), meta = names[key], card = element("article", "connection-card");
     const description = key === "github" ? "Public repository metadata is available without a token. An optional limited read-only GitHub token improves API limits." :
       key === "cloudflare" ? "Requires a Cloudflare API token limited to Pages:Read and the matching account ID." :
+      key === "openrouter" ? "A capped dedicated key exposes per-key spending. Optional management credentials provide account credit and 30-day activity, but have broader privileges." :
       "Cost and completion usage endpoints require an OpenAI organization admin key. Protect it carefully; the key has broader privileges than this dashboard uses.";
     append(card, sourceRow(key), element("p", "", description), linkNode("Open provider dashboard", meta[3], "https://"));
     group.append(card);
@@ -207,7 +258,7 @@ function render() {
   } else if (view === "deployments") {
     append(content, sectionHeading("Cloudflare Pages"), deploymentPanel());
   } else if (view === "usage") {
-    append(content, sectionHeading("OpenAI API"), usagePanel(), chart());
+    append(content, sectionHeading("OpenAI API"), usagePanel(), chart(), sectionHeading("OpenRouter"), openrouterPanel());
   } else {
     append(content, sectionHeading("Provider connections"), element("p", "detail-heading", "All data access is read-only in Manager. Provider permissions are configured privately on Cloudflare Pages, not here."), connections());
   }

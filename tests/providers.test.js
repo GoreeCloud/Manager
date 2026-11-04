@@ -57,7 +57,7 @@ test("OpenAI aggregates costs and usage without returning its admin key", async 
 });
 test("Overview never substitutes a successful zero for provider errors", async () => {
   const data = await overview({}, async () => { throw new Error("network down"); }, Date.parse("2026-11-04T13:00:00Z"));
-  assert.deepEqual(data.sources.map(x => x.status), ["error", "unconfigured", "unconfigured"]);
+  assert.deepEqual(data.sources.map(x => x.status), ["error", "unconfigured", "unconfigured", "unconfigured"]);
   assert.equal(data.sources[0].data, null);
   assert.equal(data.readOnly, true);
 });

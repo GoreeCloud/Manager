@@ -95,3 +95,15 @@ wrangler.toml           Cloudflare Pages configuration
 - [ ] Production deployment, recovery and rollback independently accepted.
 
 The application may be extended with other read-only providers by adding a normalized adapter and explicit, least-privileged server-side configuration. Do not add generic arbitrary-URL fetch proxies or client-supplied credentials.
+
+## OpenRouter API
+
+Manager can read the authenticated OpenRouter API key's daily, weekly, monthly, and lifetime spend and its optional spending limit from `GET /api/v1/key`. Configure `OPENROUTER_API_KEY` as an encrypted Pages secret. It is generation-capable outside Manager: prefer a separately capped key. Key spend is **not** an account balance.
+
+Optional, separately reviewed `OPENROUTER_MANAGEMENT_KEY` enables `GET /api/v1/credits` for account credits and `GET /api/v1/activity` for requests, tokens, spend and top five models in the last 30 **completed UTC days**. Management keys have broader permissions than Manager's GET-only use. They are not necessary for per-key reporting.
+
+Never put provider keys in a public file, browser storage or logs. All OpenRouter requests are fixed, server-side GET calls. Provider errors, missing credentials, partial data and actual zero spend remain distinguishable. OpenAI organization spend and OpenRouter key/account spend are **not** added because their scopes and periods differ.
+
+Official provider documentation: https://openrouter.ai/docs/api/api-reference/api-keys/get-current-api-key ; https://openrouter.ai/docs/api/api-reference/credits/get-remaining-credits ; https://openrouter.ai/docs/api/api-reference/analytics/get-user-activity-grouped-by-endpoint .
+
+**Status:** Deterministic development tests only; no live credentialed OpenRouter connection or production release is claimed.

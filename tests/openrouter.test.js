@@ -73,3 +73,43 @@ test("OpenRouter invalid activity rows do not become connected results", async (
       ? ok({ data: {} })
       : ok({ data: [{ requests: -1, prompt_tokens: 0, completion_tokens: 0, usage: 0 }] })));
 });
+
+
+test("OpenRouter rejects monetary magnitudes that overflow report precision", async () => {
+  // IEEE-754 MAX_VALUE is finite, but multiplying it by 1e6 produces
+  // Infinity; JSON.stringify would silently turn that billed amount into null.
+  await assert.rejects(
+    openrouter({ OPENROUTER_API_KEY: "test-only" }, async url => {
+      assert.ok(url.endsWith("/key"));
+      return ok({ data: { usage: Number.MAX_VALUE } });
+    }),
+    /outside safely reportable range/,
+  );
+  // An optional (otherwise valid) key limit must not downgrade to a null field.
+  await assert.rejects(
+    openrouter({ OPENROUTER_API_KEY: "test-only" }, async () =>
+      ok({ data: { usage: 1.25, limit_remaining: Number.MAX_VALUE } })),
+    /outside safely reportable range/,
+  );
+  // Invalid management credits must be marked unavailable without suppressing
+  // an independently valid activity response or leaking the provider payload.
+  const partial = await openrouter({ OPENROUTER_MANAGEMENT_KEY: "test-only" }, async url =>
+    url.endsWith("/credits")
+      ? ok({ data: { total_credits: Number.MAX_VALUE, total_usage: 2 } })
+      : ok({ data: [] }));
+  assert.equal(partial.partial, true);
+  assert.equal(partial.credits, null);
+  assert.equal(partial.activity.requests, 0);
+  assert.equal(partial.activity.spendUsd, 0);
+  assert.equal(JSON.stringify(partial).includes("Infinity"), false);
+
+  // If all configured management data overflows, the provider fails closed.
+  await assert.rejects(
+    openrouter({ OPENROUTER_MANAGEMENT_KEY: "test-only" }, async url =>
+      url.endsWith("/credits")
+        ? ok({ data: { total_credits: Number.MAX_VALUE, total_usage: 2 } })
+        : ok({ data: [{ model: "sample/model", usage: Number.MAX_VALUE,
+          requests: 1, prompt_tokens: 1, completion_tokens: 1 }] })),
+    /outside safely reportable range/,
+  );
+});

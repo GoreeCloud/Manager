@@ -55,3 +55,7 @@ The anonymous probe performs three HTTPS GET requests without session cookies or
 - [ ] Canonical GoreeCloud Drive inventory and project records synchronized **in place**
 
 No deployment, Access policy change, DNS operation or secret provisioning is implied by this document.
+
+## Optional OpenRouter readiness
+
+After verified Access protections on every reachable hostname, configure a dedicated, capped OpenRouter standard key for per-key spending, if desired. Optional account credits and activity require independently reviewed management credentials. Keep either key as an encrypted Pages Secret. Validate both per-key and account-level metrics against OpenRouter and confirm that no credential or identifying key metadata is present in API responses or browser traces.

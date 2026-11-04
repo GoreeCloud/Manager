@@ -11,3 +11,5 @@
 - **Review:** Verify access boundaries, token permissions, origin controls, rate limiting, accessibility, and real deployment behavior before release.
 
 Report vulnerabilities privately to the repository owner. Do not include access tokens or personal data in public issues.
+
+- **OpenRouter:** Inference-capable standard keys should be capped; optional management keys have broader account privileges. Only fixed GET endpoints are called, and keys and identifying response fields are never returned to the browser.

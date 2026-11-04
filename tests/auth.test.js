@@ -9,7 +9,7 @@ const enc = new TextEncoder();
 const b64 = data => Buffer.from(data).toString("base64url");
 const env = { CF_ACCESS_TEAM_DOMAIN: "manager-team.cloudflareaccess.com", CF_ACCESS_AUD: "manager-audience" };
 test("Root middleware fails closed for static assets and API routes", async () => {
-  for (const route of ["/", "/index.html", "/app.js", "/styles.css", "/api/overview"]) {
+  for (const route of ["/", "/index.html", "/app.js", "/styles.css", "/api/overview", "/api/session"]) {
     const response = await onRequest({ request: new Request("https://manager.goreecloud.com" + route), env, data: {}, next: () => { throw new Error("should not run"); } });
     assert.equal(response.status, 401, route);
     assert.equal(response.headers.get("cache-control"), "private, no-store, max-age=0");

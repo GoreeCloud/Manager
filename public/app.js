@@ -216,17 +216,19 @@ function render() {
 }
 async function load() {
   if (controller) controller.abort();
-  controller = new AbortController();
+  const active = new AbortController();
+  controller = active;
   const revision = ++dataRevision;
   refresh.disabled = true;
   notice.hidden = true;
   $("#overall-status").textContent = "Refreshing provider data";
   try {
-    const res = await fetch("/api/overview", { credentials: "same-origin", cache: "no-store", signal: controller.signal });
-    if (res.status === 401) throw new Error("A valid Cloudflare Access session is required. Configure or sign in to the protected application.");
+    const res = await fetch("/api/overview", { credentials: "same-origin", cache: "no-store", signal: active.signal });
+    if (res.status === 401) throw new Error("A valid Cloudflare Access session is required. Sign in to the protected application.");
+    if (res.status === 403) throw new Error("Access denied. Confirm that your Cloudflare Access identity is permitted by the private Manager owner allowlist.");
     if (!res.ok) throw new Error("Unable to load dashboard data (HTTP " + res.status + ").");
     const result = await res.json();
-    if (revision !== dataRevision) return;
+    if (active.signal.aborted || revision !== dataRevision) return;
     if (!Array.isArray(result.sources) || result.readOnly !== true) throw new Error("Unexpected dashboard response.");
     snapshot = result;
     const connected = result.sources.filter(s => s.status === "connected").length;
@@ -238,7 +240,7 @@ async function load() {
     }
     render();
   } catch (error) {
-    if (revision !== dataRevision || error.name === "AbortError") return;
+    if (active.signal.aborted || revision !== dataRevision || error.name === "AbortError") return;
     snapshot = null;
     $("#overall-status").textContent = "Dashboard unavailable";
     $("#sync-time").textContent = "No verified data";
@@ -246,7 +248,10 @@ async function load() {
     notice.textContent = error.message;
     render();
   } finally {
-    if (revision === dataRevision) refresh.disabled = false;
+    if (controller === active) {
+      controller = null;
+      if (revision === dataRevision) refresh.disabled = false;
+    }
   }
 }
 
@@ -270,7 +275,7 @@ async function validateVisibleSession() {
   }
   if (revision !== dataRevision) return;
   dataRevision++;
-  if (controller) controller.abort();
+  if (controller) { controller.abort(); controller = null; }
   snapshot = null;
   refresh.disabled = false;
   $("#overall-status").textContent = "Private session unavailable";

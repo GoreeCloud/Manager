@@ -239,7 +239,12 @@ async function validateVisibleSession() {
   try {
     const response = await fetch("/api/session", { credentials: "same-origin", cache: "no-store" });
     if (revision !== dataRevision) return; // A newer overview refresh owns the state.
-    if (response.ok) return;
+    // A login page, static fallback or malformed 200 is NOT an authenticated API response.
+    if (response.ok) {
+      const session = await response.json();
+      if (revision !== dataRevision) return;
+      if (session?.authenticated === true) return;
+    }
   } catch {
     // A failed session check cannot establish continued authorization.
   }

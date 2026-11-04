@@ -168,3 +168,7 @@ h1{font-size:clamp(32px,3vw,47px);line-height:1.13;letter-spacing:-2px;font-weig
 /* Six balanced overview metrics; individual provider panels retain four columns. */
 .stats-grid.overview-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:1150px){.stats-grid.overview-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Keep independent reporting sections visually distinct. */
+#dashboard > .panel + .panel{margin-top:20px}
+#dashboard > .panel + .section-label{margin-top:30px}

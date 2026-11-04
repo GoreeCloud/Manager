@@ -45,7 +45,7 @@ Cloudflare Pages serves `public/`; the root middleware covers static and Functio
 
 ### Cloudflare Pages setup (not automatically performed)
 
-1. In **Workers & Pages**, create a Pages project connected to `GoreeCloud/Manager` using the Git integration. Use `main` as the production branch; no build command, output directory `public`. Pages Functions deploy from the checked-in `functions/` directory.
+1. In **Workers & Pages**, create a Pages project connected to `GoreeCloud/Manager` using **Git integration**. Use `main` as the production branch; no build command, output directory `public`. Pages Functions deploy from the checked-in `functions/` directory. **Do not create via Wrangler Direct Upload**; Cloudflare does not permit switching a Direct Upload project to Git integration later. See [deployment runbook](docs/DEPLOYMENT_RUNBOOK.md).
 2. Configure the Cloudflare Access application and owner-only policy **before exposing provider data**. Record its application audience (AUD) and team domain. Bind both to the Pages project as `CF_ACCESS_AUD` and `CF_ACCESS_TEAM_DOMAIN`.
 3. Add the optional encrypted provider secrets:
    - `CF_ACCOUNT_ID`: your Cloudflare account ID.
@@ -66,6 +66,7 @@ Requires Node.js 20+ for checks/tests; the application itself has no install-tim
 ```bash
 npm run check
 npm test
+npm run verify:anonymous # expected to fail until the protected live site exists
 ```
 
 To run Pages Functions locally, install an audited, pinned Wrangler release in your development environment and use `wrangler pages dev public`. Without a valid signed Cloudflare Access token the entire application intentionally returns 401, including in local development. Tests exercise the authorization boundary with generated test keys and fake provider responses; no production credentials are used. The static UI can be served independently, but it will correctly show an unavailable state without the secured API.

@@ -2,7 +2,7 @@
 
 **Scope:** Private Cloudflare Access-protected Manager web UI. **Status:** Development-branch candidate, not deployed or browser-accepted.
 
-On returning to a visible Manager tab or focusing its window, the browser requests `GET /api/session` with same-origin credentials and no-store caching. The endpoint inherits the mandatory `/api/` Cloudflare Access JWT middleware, refuses direct calls without a verified viewer, and returns only `{"authenticated":true}`. It does not query GitHub, Cloudflare Pages, or OpenAI reporting endpoints; no identity attributes or credentials are returned.
+On returning to a visible Manager tab, restoring its page from browser history, or focusing its window, the browser requests `GET /api/session` with same-origin credentials and no-store caching. The endpoint inherits the mandatory `/api/` Cloudflare Access JWT middleware, refuses direct calls without a verified viewer, and returns only `{"authenticated":true}`. It does not query GitHub, Cloudflare Pages, or OpenAI reporting endpoints; no identity attributes or credentials are returned.
 
 A failed or unavailable session check clears current private dashboard data, totals, connected sources, and rendered rows before asking the user to sign in and explicitly refresh. A monotonically increasing request revision prevents an older overview response from repopulating cleared private DOM. A newer overview refresh also takes ownership over an older tab-return check. No periodic provider polling or paid API retry is introduced.
 

@@ -6,7 +6,7 @@
   "description": "Private read-only GoreeCloud operations dashboard, hosted with Cloudflare Pages",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "node --check public/app.js && node --check lib/auth.js && node --check lib/providers.js && node --check lib/github.js && node --check lib/cloudflare.js && node --check lib/openai.js && node --check functions/api/_middleware.js && node --check functions/api/overview.js",
+    "check": "node --check public/app.js && node --check lib/auth.js && node --check lib/providers.js && node --check lib/github.js && node --check lib/cloudflare.js && node --check lib/openai.js && node --check functions/_middleware.js && node --check functions/api/overview.js",
     "dev": "wrangler pages dev public",
     "deploy:preview": "wrangler pages deploy public --project-name goreecloud-manager --branch preview"
   },

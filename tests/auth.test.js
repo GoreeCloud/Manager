@@ -2,14 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
 import { verifyAccessJwt } from "../lib/auth.js";
-import { onRequest } from "../functions/api/_middleware.js";
+import { onRequest } from "../functions/_middleware.js";
 const enc = new TextEncoder();
 const b64 = data => Buffer.from(data).toString("base64url");
 const env = { CF_ACCESS_TEAM_DOMAIN: "manager-team.cloudflareaccess.com", CF_ACCESS_AUD: "manager-audience" };
-test("API middleware fails closed without a valid Access token", async () => {
-  const response = await onRequest({ request: new Request("https://manager.goreecloud.com/api/overview"), env, data: {}, next: () => { throw new Error("should not run"); } });
-  assert.equal(response.status, 401);
-  assert.equal(response.headers.get("cache-control"), "private, no-store, max-age=0");
+test("Root middleware fails closed for static assets and API routes", async () => {
+  for (const route of ["/", "/index.html", "/app.js", "/styles.css", "/api/overview"]) {
+    const response = await onRequest({ request: new Request("https://manager.goreecloud.com" + route), env, data: {}, next: () => { throw new Error("should not run"); } });
+    assert.equal(response.status, 401, route);
+    assert.equal(response.headers.get("cache-control"), "private, no-store, max-age=0");
+  }
 });
 test("Rejects missing Access configuration and malformed tokens", async () => {
   await assert.rejects(() => verifyAccessJwt("junk", {}, { subtle: webcrypto.subtle }));

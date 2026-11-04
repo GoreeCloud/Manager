@@ -32,12 +32,12 @@ Browser (HTML/CSS/JS, GC UI semantic roles)
             └── OpenAI GET /organization/costs and /organization/usage/completions
 ```
 
-Cloudflare Pages serves `public/`; Pages Functions in `functions/api/` read **server-side** secrets from `context.env`. There is no external frontend runtime or JavaScript package requirement. Source is plain, inspectable ESM.
+Cloudflare Pages serves `public/`; the root middleware covers static and Function routes, while Functions in `functions/api/` read **server-side** secrets from `context.env`. There is no external frontend runtime or JavaScript package requirement. Source is plain, inspectable ESM.
 
 ## Security model
 
-1. **Cloudflare Access is mandatory.** Every `/api/*` request is protected by `functions/api/_middleware.js`, which independently checks a signed Cloudflare Access JWT: RS256 key ID and signature, issuer, audience, expiration, not-before and subject. An unconfigured application fails closed with HTTP 401.
-2. **Protect the domain and all preview origins.** Create a Cloudflare Access self-hosted application for `manager.goreecloud.com` with an owner-only identity policy, and apply Access to Pages preview deployments. Even on an unprotected Pages preview, the API independently refuses requests without a valid Access assertion. Static shell assets contain no live account data.
+1. **Cloudflare Access is mandatory.** The root `functions/_middleware.js` protects **every Pages request, including static HTML/CSS/JavaScript and all API routes**, independently validating the signed Cloudflare Access JWT (RS256 signature/key ID, issuer, audience, expiration, not-before and subject). An unconfigured application fails closed with HTTP 401.
+2. **Protect every origin.** Add a Cloudflare Access application/policy for `manager.goreecloud.com`, the production `*.pages.dev` hostname, and enable the separate Pages preview-deployment Access policy. Cloudflare documents that preview protection alone does not cover production pages.dev or custom domains. The root middleware is defense in depth, not a replacement for an owner-only Access allow policy. Static shell assets contain no live account data.
 3. **Never put secrets in Git or frontend files.** Put provider tokens and `CF_ACCESS_AUD` / `CF_ACCESS_TEAM_DOMAIN` into Cloudflare Pages runtime environment variables (encrypt sensitive values as Secrets). Never use `VITE_*`, public JSON configs, query parameters, or client-side localStorage for API keys.
 4. **Token scope matters.** For Cloudflare use **Pages:Read**, not a global API key. GitHub's optional token should have read-only minimal metadata scope. **OpenAI currently requires an organization admin key** for costs and usage, with provider-level privileges broader than this application's GET-only use; only enable if this risk is acceptable and the key is closely safeguarded.
 5. **No mutation features.** Adapters only issue GET requests to fixed provider hosts; clients cannot select arbitrary external URLs. Provider errors are sanitized, redirects refused, responses normalized, and JSON sent with `no-store`. No database or analytics tracker is included.
@@ -53,7 +53,7 @@ Cloudflare Pages serves `public/`; Pages Functions in `functions/api/` read **se
    - `GITHUB_READ_TOKEN`: optional read-only token; without it the GitHub connector reads publicly visible repos only.
    - `OPENAI_ADMIN_KEY`: optional org admin key for usage/cost reports; review its broader provider permissions before enabling.
    - `GITHUB_OWNER`: `GoreeCloud` (default).
-4. Verify an unauthenticated GET `/api/overview` returns 401 and an authenticated session returns JSON only to the intended identity. Confirm the Pages preview hostname also fails closed without Access.
+4. Verify unauthenticated GET requests to `/`, `/app.js`, `/styles.css`, and `/api/overview` fail closed; verify an authenticated session returns the shell and JSON only to the intended identity. Check each custom, production pages.dev, and preview hostname for direct and alternate-origin bypass.
 5. Attach the custom domain `manager.goreecloud.com` to the Pages project using Cloudflare's domain controls. Verify DNS, TLS, Access, browser behavior and mobile layout. **Do not expose an unauthenticated provider-data endpoint.**
 6. Confirm a real deployment, published URL, production read-only permissions and visual quality in a browser before calling the service live.
 
@@ -68,11 +68,12 @@ npm run check
 npm test
 ```
 
-To run Pages Functions locally, install an audited, pinned Wrangler release in your development environment and use `wrangler pages dev public`. Without a valid signed Cloudflare Access token the API intentionally returns 401, including in local development. Tests exercise the authorization boundary with generated test keys and fake provider responses; no production credentials are used. The static UI can be served independently, but it will correctly show an unavailable state without the secured API.
+To run Pages Functions locally, install an audited, pinned Wrangler release in your development environment and use `wrangler pages dev public`. Without a valid signed Cloudflare Access token the entire application intentionally returns 401, including in local development. Tests exercise the authorization boundary with generated test keys and fake provider responses; no production credentials are used. The static UI can be served independently, but it will correctly show an unavailable state without the secured API.
 
 ```text
 public/                First-party responsive dashboard and restrictive browser headers
-functions/api/          Protected HTTP route and Access middleware
+functions/_middleware.js Root site-wide Cloudflare Access JWT verification
+functions/api/          Protected read-only HTTP route
 lib/                    Auth, network, aggregation and provider read adapters
 tests/                  Node built-in test runner with deterministic provider fixtures
 .github/workflows/      Minimal GitHub Actions checks with read-only repository permissions
@@ -82,7 +83,7 @@ wrangler.toml           Cloudflare Pages configuration
 ## Release and verification checklist
 
 - [x] Dependency-free frontend source and read-only provider endpoints implemented.
-- [x] Deterministic automated tests for data normalization, JWT verification and fail-closed behavior.
+- [x] Deterministic automated tests for data normalization, JWT verification and fail-closed behavior on static and API routes. Local Cloudflare Pages runtime confirmed HTTP 401 for anonymous homepage, styles, scripts and API on November 4, 2026.
 - [ ] Production Cloudflare Access owner-only policy + preview-domain protection verified.
 - [ ] Read-scoped Cloudflare/GitHub integration secrets provisioned.
 - [ ] OpenAI admin-key exposure risk accepted and monitored, or connector kept disabled.

@@ -1,5 +1,8 @@
-import { verifyAccessJwt } from "../../lib/auth.js";
-import { json } from "../../lib/http.js";
+import { verifyAccessJwt } from "../lib/auth.js";
+import { json } from "../lib/http.js";
+
+// Root middleware also gates static HTML, CSS, JavaScript and Pages Functions.
+// Cloudflare Access must separately protect all production and preview hostnames.
 export async function onRequest(context) {
   const jwt = context.request.headers.get("Cf-Access-Jwt-Assertion");
   try {

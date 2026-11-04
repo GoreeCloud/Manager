@@ -18,7 +18,7 @@ Manager aggregates provider read results. The existing [GoreeCloud GitHub Dashbo
 | OpenAI | Seven UTC calendar-day cost totals, completion request counts, input/output tokens, daily cost chart | **Organization admin key** (current provider API constraint) |
 | Connected sources | Individual connected / error / not configured states | Derived from actual API responses |
 
-Missing data is never replaced with fabricated numbers. Source totals may be truncated or delayed as documented by their APIs. Refresh requests run concurrently, but one failing provider does not erase the others. No infrastructure controls, deployment actions, GitHub mutations, or OpenAI generation endpoints exist in this app.
+Missing data is never replaced with fabricated numbers. Source totals may be truncated or delayed as documented by their APIs. Refresh requests run concurrently, but one failing provider does not erase the others. HTTP 429 errors are reported as **potential rate, quota, or spending limits** without guessing the provider's exact cause; Manager makes no automatic retries and never repeats error bodies or credentials in API responses. A successful partial OpenAI reporting response retains actual values and marks missing metrics with `null` rather than zero. An OpenAI usage/cost report is **not** authoritative confirmation that the organization can make new paid API requests. No infrastructure controls, deployment actions, GitHub mutations, or OpenAI generation endpoints exist in this app.
 
 ## Architecture
 

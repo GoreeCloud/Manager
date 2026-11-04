@@ -60,6 +60,42 @@ test("Overview never substitutes a successful zero for provider errors", async (
   assert.equal(data.sources[0].data, null);
   assert.equal(data.readOnly, true);
 });
+test("Provider 429 is sanitized, non-retrying, and isolated from other sources", async () => {
+  const calls = [];
+  const fetcher = async (url, options) => {
+    calls.push({ url, method: options.method });
+    if (url.startsWith("https://api.openai.com/")) {
+      return new Response(JSON.stringify({ error: "private upstream diagnostics" }), {
+        status: 429, headers: { "content-type": "application/json" }
+      });
+    }
+    return ok([]);
+  };
+  const report = await overview({ GITHUB_OWNER: "GoreeCloud", OPENAI_ADMIN_KEY: "private-test-token" },
+    fetcher, Date.parse("2026-11-04T13:00:00Z"));
+  assert.deepEqual(report.sources.map(s => s.status), ["connected", "unconfigured", "error"]);
+  assert.match(report.sources[2].message, /rate, quota or spending/);
+  assert.equal(report.sources[2].data, null);
+  assert.ok(!JSON.stringify(report).includes("private upstream diagnostics"));
+  assert.ok(!JSON.stringify(report).includes("private-test-token"));
+  assert.equal(calls.length, 3); // one GitHub GET and two distinct OpenAI reporting GETs; no retries
+  assert.ok(calls.every(call => call.method === "GET"));
+});
+
+test("OpenAI returns partial reported costs without inventing usage after a 429", async () => {
+  const data = await openai({ OPENAI_ADMIN_KEY: "dummy-test-key" }, async url => {
+    if (url.includes("/costs?")) return ok({ data: [
+      { start_time: 1793750400, results: [{ amount: { value: 2.35, currency: "usd" } }] }
+    ] });
+    return new Response("{}", { status: 429, headers: { "content-type": "application/json" } });
+  }, Date.parse("2026-11-04T13:00:00Z"));
+  assert.equal(data.costUsd, 2.35);
+  assert.equal(data.requests, null);
+  assert.equal(data.inputTokens, null);
+  assert.equal(data.outputTokens, null);
+  assert.equal(data.partial, true);
+});
+
 test("Upstream HTTP failures are normalized and reject redirects", async () => {
   await assert.rejects(() => readJson("http://example.com"));
   await assert.rejects(() => readJson("https://api.github.com/example", {}, async () => new Response("no", { status: 403 })));

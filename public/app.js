@@ -157,7 +157,7 @@ function deploymentPanel() {
     append(element("span", "", ""), element("span", "small-indicator " + p.status), element("span", "", p.status)),
     when(p.deployedAt)
   ]), "Deployment details unavailable", "Configure a Cloudflare Pages:Read token and account ID to load real projects."));
-  if (cf?.truncated) panel.append(element("p", "panel-caption", "Only the first 100 projects were queried; reported totals are incomplete."));
+  if (cf?.truncated) panel.append(element("p", "panel-caption", "Only the first 500 projects were queried; reported totals may be incomplete."));
   return panel;
 }
 function usagePanel() {

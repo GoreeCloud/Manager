@@ -86,3 +86,47 @@ test("Upstream JSON reader enforces response-size bounds", async () => {
   await assert.rejects(() => readJson("https://api.github.com/big", {}, async () =>
     new Response("{}", { headers: { "content-type": "application/json", "content-length": "1500001" } })));
 });
+
+test("Cloudflare Pages aggregates all reported pages and deduplicates project IDs", async () => {
+  const requests = [];
+  const result = await cloudflare({ CF_ACCOUNT_ID: "a".repeat(32), CF_PAGES_READ_TOKEN: "test-read" }, async (url) => {
+    const page = Number(new URL(url).searchParams.get("page"));
+    requests.push(page);
+    const rows = page === 1
+      ? [{ id: "p1", name: "first", subdomain: "first.pages.dev" }]
+      : page === 2
+        ? [{ id: "p2", name: "second", subdomain: "second.pages.dev" }, { id: "p1", name: "first", subdomain: "first.pages.dev" }]
+        : [{ id: "p3", name: "third", subdomain: "attacker.example.com" }];
+    return ok({ success: true, result: rows, result_info: { total_pages: 3, total_count: 3 } });
+  });
+  assert.deepEqual(requests.sort(), [1, 2, 3]);
+  assert.equal(result.projectCount, 3);
+  assert.equal(result.truncated, false);
+  assert.equal(result.projects[2].url, null);
+});
+
+test("Cloudflare Pages advertises incomplete totals after the five-page cap", async () => {
+  const queried = [];
+  const result = await cloudflare({ CF_ACCOUNT_ID: "a".repeat(32), CF_PAGES_READ_TOKEN: "test-read" }, async (url) => {
+    const page = Number(new URL(url).searchParams.get("page"));
+    queried.push(page);
+    return ok({
+      success: true, result_info: { total_pages: 6, total_count: 600 },
+      result: Array.from({ length: 100 }, (_, index) => ({
+        id: "p" + page + "-" + index, name: "page-" + page + "-" + index, subdomain: "project.pages.dev",
+      })),
+    });
+  });
+  assert.deepEqual(queried.sort(), [1, 2, 3, 4, 5]);
+  assert.equal(result.projectCount, 500);
+  assert.equal(result.truncated, true);
+  assert.equal(result.projects.length, 12);
+});
+
+test("Cloudflare Pages rejects malformed subsequent pages instead of claiming completeness", async () => {
+  await assert.rejects(() => cloudflare({ CF_ACCOUNT_ID: "a".repeat(32), CF_PAGES_READ_TOKEN: "test-read" }, async (url) => {
+    const page = Number(new URL(url).searchParams.get("page"));
+    if (page === 1) return ok({ success: true, result: [{ id: "p1", name: "one" }], result_info: { total_pages: 2, total_count: 2 } });
+    return ok({ success: false, result: [] });
+  }));
+});

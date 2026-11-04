@@ -267,6 +267,7 @@ $("#theme-toggle").addEventListener("click", () => theme(document.documentElemen
 refresh.addEventListener("click", load);
 window.addEventListener("hashchange", render);
 window.addEventListener("focus", () => { void validateVisibleSession(); });
+window.addEventListener("pageshow", () => { void validateVisibleSession(); });
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") void validateVisibleSession();
 });

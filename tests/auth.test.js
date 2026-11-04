@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
 import { verifyAccessJwt } from "../lib/auth.js";
 import { onRequest } from "../functions/_middleware.js";
+import { onRequest as onSessionRequest } from "../functions/api/session.js";
+import { readFileSync } from "node:fs";
 const enc = new TextEncoder();
 const b64 = data => Buffer.from(data).toString("base64url");
 const env = { CF_ACCESS_TEAM_DOMAIN: "manager-team.cloudflareaccess.com", CF_ACCESS_AUD: "manager-audience" };
@@ -83,4 +85,37 @@ test("Access signing-key rotation refreshes a bounded JWKS cache", async () => {
   // The old token is no longer verifiable after an upstream key rotation.
   await assert.rejects(verifyAccessJwt(await sign(keys[0]), environment, opts(at + 41)));
   assert.equal(requests, 2);
+});
+
+test("Lightweight session route never leaks identity and fails closed without middleware", async () => {
+  const request = new Request("https://manager.goreecloud.com/api/session");
+  const rejected = await onSessionRequest({ request, data: {} });
+  assert.equal(rejected.status, 401);
+  assert.equal(rejected.headers.get("cache-control"), "private, no-store, max-age=0");
+  const verified = await onSessionRequest({
+    request, data: { viewer: { sub: "internal-private-subject", email: "private@example.com" } }
+  });
+  assert.equal(verified.status, 200);
+  assert.deepEqual(await verified.json(), { authenticated: true });
+  const body = JSON.stringify(await (await onSessionRequest({
+    request, data: { viewer: { sub: "private-subject" } }
+  })).json());
+  assert.ok(!body.includes("private-subject"));
+  const wrongMethod = await onSessionRequest({
+    request: new Request(request.url, { method: "POST" }), data: { viewer: { sub: "test" } }
+  });
+  assert.equal(wrongMethod.status, 405);
+});
+
+test("Manager browser has a fail-closed tab-return session check and revision guard", () => {
+  // Source-level regression only; real tab/session/cookie browser acceptance remains separate.
+  const app = readFileSync(new URL("../public/app.js", import.meta.url), "utf8");
+  assert.match(app, /fetch\("\/api\/session"/);
+  assert.match(app, /session\?\.authenticated === true/);
+  assert.match(app, /window\.addEventListener\("focus"/);
+  assert.match(app, /window\.addEventListener\("pageshow"/);
+  assert.match(app, /document\.addEventListener\("visibilitychange"/);
+  assert.match(app, /revision !== dataRevision/);
+  assert.match(app, /snapshot = null/);
+  assert.match(app, /Private data cleared/);
 });

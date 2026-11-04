@@ -42,3 +42,20 @@ test("GitHub repository metrics remain available when Actions API fails", async 
   assert.equal(result.repositoryCount, 1);
   assert.equal(result.workflowRuns, null);
 });
+
+test("GitHub Actions never queries repositories absent from verified public inventory", async () => {
+  let workflowsRequested = 0;
+  const data = await github({ GITHUB_OWNER:"GoreeCloud", GITHUB_ACTIONS_REPO:"SecretRepo", GITHUB_READ_TOKEN:"in-memory-test" }, async url => {
+    if (url.includes("/actions/runs?")) {
+      workflowsRequested++;
+      throw new Error("private Actions metadata must not be queried");
+    }
+    return ok([
+      {name:"Manager",private:false,archived:false,stargazers_count:1,open_issues_count:0},
+      {name:"SecretRepo",private:true,archived:false,stargazers_count:0,open_issues_count:0}
+    ]);
+  });
+  assert.equal(data.repositoryCount,1);
+  assert.equal(workflowsRequested,0);
+  assert.equal(data.workflowRuns,null);
+});

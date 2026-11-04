@@ -18,7 +18,7 @@ Manager aggregates provider read results. The existing [GoreeCloud GitHub Dashbo
 | OpenAI | Seven UTC calendar-day cost totals, completion request counts, input/output tokens, daily cost chart | **Organization admin key** (current provider API constraint) |
 | Connected sources | Individual connected / error / not configured states | Derived from actual API responses |
 
-Missing data is never replaced with fabricated numbers. Source totals may be truncated or delayed as documented by their APIs. Refresh requests run concurrently, but one failing provider does not erase the others. GitHub Actions workflow errors are isolated from successful GitHub repository summaries; workflow activity defaults to `GoreeCloud/Manager` and may target another public repository with `GITHUB_ACTIONS_REPO`. No infrastructure controls, deployment actions, GitHub mutations, or OpenAI generation endpoints exist in this app.
+Missing data is never replaced with fabricated numbers. Source totals may be truncated or delayed as documented by their APIs. Refresh requests run concurrently, but one failing provider does not erase the others. GitHub Actions workflow errors are isolated from successful GitHub repository summaries; workflow activity defaults to `GoreeCloud/Manager` and may target another **verified public, active** repository with `GITHUB_ACTIONS_REPO`. Manager never queries Actions for a repository excluded from its public repository inventory, even when the supplied token has private-repository access. No infrastructure controls, deployment actions, GitHub mutations, or OpenAI generation endpoints exist in this app.
 
 ## Architecture
 

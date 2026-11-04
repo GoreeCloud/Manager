@@ -1,3 +1,5 @@
+import { money } from "./format.js";
+
 const $ = selector => document.querySelector(selector);
 const dashboard = $("#dashboard");
 const refresh = $("#refresh");
@@ -25,7 +27,6 @@ function element(tag, cls, value) {
 }
 function append(parent, ...children) { children.flat().forEach(child => child && parent.append(child)); return parent; }
 function fmt(value) { return value === null || value === undefined || !Number.isFinite(Number(value)) ? "—" : new Intl.NumberFormat("en-US").format(value); }
-function money(value) { return value == null ? "—" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value); }
 function when(value) { if (!value || !Number.isFinite(Date.parse(value))) return "Not available"; return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value)); }
 function source(name) { return snapshot?.sources?.find(item => item.name === name) || { name, status: "unconfigured", data: null, message: "Not available" }; }
 function sectionHeading(label) { return append(element("h2", "section-label"), element("span", "", label), element("span", "line")); }

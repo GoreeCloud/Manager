@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1125">
+  <meta name="description" content="GoreeCloud Manager — your private read-only command center for cloud infrastructure.">
+  <title>GoreeCloud Manager · Command center</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">G<span>·</span></div>
+        <div class="brand-copy"><strong>GoreeCloud</strong><span>MANAGER</span></div>
+      </div>
+      <div class="sidebar-label">WORKSPACE</div>
+      <nav class="nav-stack" aria-label="Dashboard sections">
+        <a href="#overview" class="nav-link active" data-view="overview" aria-current="page"><span class="nav-glyph" aria-hidden="true">◈</span> Overview</a>
+        <a href="#github" class="nav-link" data-view="github"><span class="nav-glyph" aria-hidden="true">⌘</span> GitHub</a>
+        <a href="#deployments" class="nav-link" data-view="deployments"><span class="nav-glyph" aria-hidden="true">▤</span> Deployments</a>
+        <a href="#usage" class="nav-link" data-view="usage"><span class="nav-glyph" aria-hidden="true">◷</span> API usage</a>
+        <a href="#connections" class="nav-link" data-view="connections"><span class="nav-glyph" aria-hidden="true">⛓</span> Connections</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="side-glow"></div>
+        <span class="micro-heading">SECURITY POSTURE</span>
+        <strong><span class="dot safe"></span> Read-only by design</strong>
+        <p>Protected API routes. No infrastructure controls or secret values in the browser.</p>
+      </div>
+      <div class="sidebar-footer">GoreeCloud UI · Adaptive console</div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <div class="breadcrumb"><span>WORKSPACE</span><span class="crumb-slash">/</span><strong id="breadcrumb-label">Overview</strong></div>
+        <div class="top-actions">
+          <span class="privacy-chip"><span class="dot safe"></span> Private workspace</span>
+          <button id="theme-toggle" class="icon-button" type="button" title="Toggle appearance" aria-label="Toggle light or dark appearance">☼</button>
+          <div class="avatar" aria-label="GoreeCloud workspace" title="GoreeCloud">GC</div>
+        </div>
+      </header>
+      <main id="main" class="main-content">
+        <div class="intro-row">
+          <div><p class="eyebrow"><span class="eyebrow-spark">✦</span> YOUR UNIFIED COMMAND CENTER</p><h1 id="page-title">Infrastructure, in focus<span class="title-period">.</span></h1><p class="page-subtitle" id="page-description">One clear view across your code, deployments, and API activity.</p></div>
+          <div class="intro-actions"><button id="refresh" type="button" class="refresh-button"><span aria-hidden="true">↻</span> Refresh data</button></div>
+        </div>
+        <section class="status-strip" aria-label="Dashboard data freshness">
+          <div class="status-pulse"><span class="pulse-ring"></span><span id="overall-status">Connecting to sources</span></div>
+          <div class="status-separator"></div>
+          <p id="sync-time">No data retrieved yet</p>
+          <span class="mode-tag">VIEW ONLY</span>
+        </section>
+        <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+        <div id="dashboard" aria-live="off">
+          <div class="placeholder" role="status">Loading connected sources securely…</div>
+        </div>
+        <footer class="main-footer"><span>GoreeCloud Manager <span class="foot-dot">·</span> Private operations overview</span><span>Data belongs to its source providers</span></footer>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

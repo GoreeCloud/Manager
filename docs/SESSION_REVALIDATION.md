@@ -1,0 +1,11 @@
+# Manager — private session revalidation (development candidate)
+
+**Scope:** Private Cloudflare Access-protected Manager web UI. **Status:** Development-branch candidate, not deployed or browser-accepted.
+
+On returning to a visible Manager tab or focusing its window, the browser requests `GET /api/session` with same-origin credentials and no-store caching. The endpoint inherits the mandatory `/api/` Cloudflare Access JWT middleware, refuses direct calls without a verified viewer, and returns only `{"authenticated":true}`. It does not query GitHub, Cloudflare Pages, or OpenAI reporting endpoints; no identity attributes or credentials are returned.
+
+A failed or unavailable session check clears current private dashboard data, totals, connected sources, and rendered rows before asking the user to sign in and explicitly refresh. A monotonically increasing request revision prevents an older overview response from repopulating cleared private DOM. A newer overview refresh also takes ownership over an older tab-return check. No periodic provider polling or paid API retry is introduced.
+
+**Limits:** This is UI data-minimization defense-in-depth, not server-side token/cookie revocation. Cloudflare Access must protect every production and preview domain, and every private API request remains independently authenticated. An already-visible idle tab is not automatically cleared on remote logout until an Access request or tab-return check occurs. Browsers without focus/visibility events require manual Refresh. Clearing on temporary network failure is deliberately fail-closed.
+
+**Verification:** Unit tests cover endpoint authorization, sanitization, GET-only semantics, no-store, and source-level browser invalidation contracts. Node syntax and unit CI are necessary but not proof of actual browser/session lifecycle. Before merge or deployment, run two-tab Cloudflare Access logout/expiration acceptance, stale-request race regression, reload/back-forward and offline/reconnect checks; inspect mobile/desktop appearance and absence of sensitive data in history, storage, or DOM. No production tokens or user data are required for synthetic tests.

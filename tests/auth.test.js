@@ -69,6 +69,7 @@ test("Manager browser has a fail-closed tab-return session check and revision gu
   const app = readFileSync(new URL("../public/app.js", import.meta.url), "utf8");
   assert.match(app, /fetch\("\/api\/session"/);
   assert.match(app, /window\.addEventListener\("focus"/);
+  assert.match(app, /window\.addEventListener\("pageshow"/);
   assert.match(app, /document\.addEventListener\("visibilitychange"/);
   assert.match(app, /revision !== dataRevision/);
   assert.match(app, /snapshot = null/);

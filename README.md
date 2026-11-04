@@ -107,4 +107,6 @@ Never put provider keys in a public file, browser storage or logs. All OpenRoute
 
 Official provider documentation: https://openrouter.ai/docs/api/api-reference/api-keys/get-current-key ; https://openrouter.ai/docs/api/api-reference/credits/get-credits ; https://openrouter.ai/docs/api/api-reference/analytics/get-user-activity .
 
+**Display precision:** Small nonzero USD amounts retain up to six decimal places rather than displaying as `$0.00`. The actual zero `$0.00` is distinct from missing or invalid values (`—`). Provider API results remain authoritative; formatting does not increase measurement precision.
+
 **Status:** Deterministic development tests only; no live credentialed OpenRouter connection or production release is claimed.

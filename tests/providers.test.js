@@ -40,7 +40,7 @@ test("Cloudflare maps only safe project fields", async () => {
     return ok({ success: true, result: [{ name: "site", subdomain: "site.pages.dev", env_vars: { PRIVATE_KEY: "do-not-export" }, latest_deployment: { created_on: "2026-11-04T10:00:00Z", latest_stage: { status: "success" }, deployment_trigger: { metadata: { branch: "main" } } } }] });
   });
   assert.equal(result.projectCount, 1);
-  assert.equal(result.projects[0].status, "healthy");
+  assert.equal(result.projects[0].status, "success");
   assert.equal(JSON.stringify(result).includes("do-not-export"), false);
 });
 test("OpenAI aggregates costs and usage without returning its admin key", async () => {
@@ -129,4 +129,44 @@ test("Cloudflare Pages rejects malformed subsequent pages instead of claiming co
     if (page === 1) return ok({ success: true, result: [{ id: "p1", name: "one" }], result_info: { total_pages: 2, total_count: 2 } });
     return ok({ success: false, result: [] });
   }));
+});
+
+test("Cloudflare stage status is not misrepresented as website health", async () => {
+  const projects = [
+    { name: "alpha", latest_deployment: {
+      environment: "production", created_on: "2026-11-04T10:00:00Z",
+      latest_stage: { status: "success", name: "deploy" },
+      deployment_trigger: { metadata: { branch: "main" } },
+    }},
+    { name: "beta", latest_deployment: {
+      environment: "preview", latest_stage: { status: "failure", name: "build" },
+      deployment_trigger: { metadata: { branch: "feature/test" } },
+    }},
+    { name: "gamma", latest_deployment: { environment: "preview", latest_stage: { status: "canceled" } } },
+    { name: "delta", latest_deployment: { environment: "production", latest_stage: { status: "invented-upstream-state" } } },
+  ];
+  const report = await cloudflare({
+    CF_ACCOUNT_ID: "a".repeat(32), CF_PAGES_READ_TOKEN: "in-memory-test",
+  }, async () => ok({ success: true, result: projects }));
+  assert.deepEqual(report.projects.map(p => p.status),
+    ["success", "failure", "canceled", "unknown"]);
+  assert.deepEqual(report.projects.map(p => p.environment),
+    ["production", "preview", "preview", "production"]);
+  assert.equal(report.projects[0].branch, "main");
+  assert.ok(!JSON.stringify(report).includes("healthy"));
+});
+
+test("Cloudflare identifies preview when the latest deployment differs from production", async () => {
+  const report = await cloudflare({
+    CF_ACCOUNT_ID: "b".repeat(32), CF_PAGES_READ_TOKEN: "in-memory-test",
+  }, async () => ok({ success: true, result: [{
+    id: "p", name: "site",
+    canonical_deployment: { environment: "production", latest_stage: { status: "success" } },
+    latest_deployment: { environment: "preview", latest_stage: { status: "active" },
+      deployment_trigger: { metadata: { branch: "feature/testing" } } },
+  }] }));
+  assert.deepEqual(
+    { environment: report.projects[0].environment, branch: report.projects[0].branch, status: report.projects[0].status },
+    { environment: "preview", branch: "feature/testing", status: "active" },
+  );
 });

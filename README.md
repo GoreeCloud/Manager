@@ -110,3 +110,9 @@ Official provider documentation: https://openrouter.ai/docs/api/api-reference/ap
 **Display precision:** Small nonzero USD amounts retain up to six decimal places rather than displaying as `$0.00`. The actual zero `$0.00` is distinct from missing or invalid values (`—`). Provider API results remain authoritative; formatting does not increase measurement precision.
 
 **Status:** Deterministic development tests only; no live credentialed OpenRouter connection or production release is claimed.
+
+## Browser tab-return session revalidation
+
+When a loaded Manager tab receives a focus, visible-state or restored-page event, it hides private dashboard rows immediately and performs `GET /api/session`. The endpoint returns only `{"authenticated":true}` for an authorized, allowlisted Cloudflare Access identity and relies on the root middleware for signed-token and owner-email checks. Invalid responses, non-JSON pages, network errors and expired sessions leave private data cleared until a new authorized refresh. Revision guards prevent old, in-flight overview responses from restoring cleared data.
+
+This is defense-in-depth for an already loaded browser tab. It does **not** revoke active Cloudflare Access sessions or prove instant logout propagation. Real owner and non-owner Access behavior must be tested on every deployed origin. See [session revalidation acceptance](docs/SESSION_REVALIDATION.md).

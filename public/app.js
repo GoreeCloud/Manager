@@ -6,6 +6,7 @@ const refresh = $("#refresh");
 const notice = $("#notice");
 let snapshot = null;
 let controller = null;
+let dataRevision = 0;
 const names = {
   github: ["GitHub", "Code & repositories", "⌘", "https://github.com/GoreeCloud"],
   cloudflare: ["Cloudflare Pages", "Deployments & projects", "▤", "https://dash.cloudflare.com/"],
@@ -269,6 +270,7 @@ async function load() {
   if (controller) controller.abort();
   const active = new AbortController();
   controller = active;
+  const revision = ++dataRevision;
   refresh.disabled = true;
   notice.hidden = true;
   $("#overall-status").textContent = "Refreshing provider data";
@@ -278,7 +280,7 @@ async function load() {
     if (res.status === 403) throw new Error("Access denied. Confirm that your Cloudflare Access identity is permitted by the private Manager owner allowlist.");
     if (!res.ok) throw new Error("Unable to load dashboard data (HTTP " + res.status + ").");
     const result = await res.json();
-    if (active.signal.aborted) return;
+    if (active.signal.aborted || revision !== dataRevision) return;
     if (!Array.isArray(result.sources) || result.readOnly !== true) throw new Error("Unexpected dashboard response.");
     snapshot = result;
     const connected = result.sources.filter(s => s.status === "connected").length;
@@ -290,7 +292,7 @@ async function load() {
     }
     render();
   } catch (error) {
-    if (active.signal.aborted || error.name === "AbortError") return;
+    if (active.signal.aborted || revision !== dataRevision || error.name === "AbortError") return;
     snapshot = null;
     $("#overall-status").textContent = "Dashboard unavailable";
     $("#sync-time").textContent = "No verified data";
@@ -300,9 +302,47 @@ async function load() {
   } finally {
     if (controller === active) {
       controller = null;
-      refresh.disabled = false;
+      if (revision === dataRevision) refresh.disabled = false;
     }
   }
+}
+async function validateVisibleSession() {
+  if (!snapshot || document.visibilityState === "hidden") return;
+  const previous = snapshot;
+  const revision = ++dataRevision;
+  if (controller) { controller.abort(); controller = null; }
+  snapshot = null;
+  refresh.disabled = true;
+  notice.hidden = true;
+  $("#overall-status").textContent = "Checking private session";
+  $("#sync-time").textContent = "Private data hidden during verification";
+  render();
+  let verified = false;
+  try {
+    const response = await fetch("/api/session", { credentials: "same-origin", cache: "no-store" });
+    if (response.ok) {
+      const report = await response.json();
+      verified = report?.authenticated === true;
+    }
+  } catch { /* A failed verification cannot establish access. */ }
+  if (revision !== dataRevision) return;
+  refresh.disabled = false;
+  if (verified) {
+    snapshot = previous;
+    const connected = previous.sources.filter(s => s.status === "connected").length;
+    $("#overall-status").textContent = connected + " of " + previous.sources.length + " sources connected";
+    $("#sync-time").textContent = "Last checked " + when(previous.generatedAt);
+    if (connected < previous.sources.length) {
+      notice.hidden = false;
+      notice.textContent = "Some providers are unavailable or not configured. Metrics shown as dashes have not been verified; check Connections for details.";
+    }
+  } else {
+    $("#overall-status").textContent = "Private session unavailable";
+    $("#sync-time").textContent = "Private data cleared";
+    notice.hidden = false;
+    notice.textContent = "Your private session could not be verified. Sign in again and refresh to load current data.";
+  }
+  render();
 }
 function theme(mode) {
   document.documentElement.dataset.theme = mode;
@@ -316,4 +356,9 @@ theme(initialMode);
 $("#theme-toggle").addEventListener("click", () => theme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
 refresh.addEventListener("click", load);
 window.addEventListener("hashchange", render);
+window.addEventListener("focus", () => { void validateVisibleSession(); });
+window.addEventListener("pageshow", () => { void validateVisibleSession(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") void validateVisibleSession();
+});
 load();

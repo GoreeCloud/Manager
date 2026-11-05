@@ -57,7 +57,7 @@ test("Signed Access token still requires owner allowlist for static pages and AP
       const response = await onRequest(context);
       return { status: response.status, reached, viewer: context.data.viewer };
     };
-    for (const path of ["/", "/app.js", "/api/overview"]) {
+    for (const path of ["/", "/app.js", "/api/overview", "/api/session"]) {
       const response = await call(path, valid, { MANAGER_ALLOWED_EMAILS: "owner@example.com" });
       assert.equal(response.status, 200, path);
       assert.equal(response.reached, true, path);
@@ -65,6 +65,7 @@ test("Signed Access token still requires owner allowlist for static pages and AP
     }
     assert.equal((await call("/", valid, {})).status, 403);
     assert.equal((await call("/api/overview", valid, { MANAGER_ALLOWED_EMAILS: "someone@example.com" })).status, 403);
+    assert.equal((await call("/api/session", valid, { MANAGER_ALLOWED_EMAILS: "someone@example.com" })).status, 403);
     assert.equal((await call("/", await sign(undefined), { MANAGER_ALLOWED_EMAILS: "owner@example.com" })).status, 403);
     assert.equal((await call("/", await sign("owner@example.com", { aud: ["wrong"] }), { MANAGER_ALLOWED_EMAILS: "owner@example.com" })).status, 401);
     assert.equal(certReads, 1, "test signing keys should be fetched at most once");

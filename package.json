@@ -6,7 +6,7 @@
   "description": "Private read-only GoreeCloud operations dashboard, hosted with Cloudflare Pages",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "node --check public/app.js && node --check public/format.js && node --check lib/auth.js && node --check lib/authorization.js && node --check lib/providers.js && node --check lib/github.js && node --check lib/workflows.js && node --check lib/cloudflare.js && node --check lib/openai.js && node --check lib/openrouter.js && node --check functions/_middleware.js && node --check functions/api/overview.js && node --check scripts/verify-pages-project.mjs",
+    "check": "node --check public/app.js && node --check public/format.js && node --check lib/auth.js && node --check lib/authorization.js && node --check lib/providers.js && node --check lib/github.js && node --check lib/workflows.js && node --check lib/cloudflare.js && node --check lib/openai.js && node --check lib/openrouter.js && node --check functions/_middleware.js && node --check functions/api/overview.js && node --check functions/api/session.js && node --check scripts/verify-pages-project.mjs",
     "dev": "wrangler pages dev public",
     "verify:anonymous": "node scripts/verify-anonymous-access.mjs",
     "verify:pages-project": "node scripts/verify-pages-project.mjs"

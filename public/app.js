@@ -155,12 +155,15 @@ function workflowPanel() {
   return panel;
 }
 function deploymentPanel() {
-  const panel = makePanel("Pages projects", "Latest deployment reported by Cloudflare");
+  const panel = makePanel("Pages projects", "Latest deployment stage · not an uptime monitor");
   const cf = source("cloudflare").data;
-  panel.append(table(["Project", "Branch", "Deployment", "Updated"], (cf?.projects || []).map(p => [
+  const stageLabels = { success: "Succeeded", failure: "Failed", active: "In progress",
+    idle: "Idle", canceled: "Canceled", skipped: "Skipped", unknown: "Unknown" };
+  panel.append(table(["Project", "Environment · branch", "Deployment stage", "Updated"], (cf?.projects || []).map(p => [
     append(element("div", "name-cell"), linkNode(p.name, p.url, "https://")),
-    p.branch || "—",
-    append(element("span", "", ""), element("span", "small-indicator " + p.status), element("span", "", p.status)),
+    (p.environment && p.environment !== "unknown" ? p.environment + (p.branch ? " · " + p.branch : "") : p.branch) || "—",
+    append(element("span", "", ""), element("span", "small-indicator " + p.status),
+      element("span", "", stageLabels[p.status] || "Unknown")),
     when(p.deployedAt)
   ]), "Deployment details unavailable", "Configure a Cloudflare Pages:Read token and account ID to load real projects."));
   if (cf?.truncated) panel.append(element("p", "panel-caption", "Only the first 500 projects were queried; reported totals may be incomplete."));

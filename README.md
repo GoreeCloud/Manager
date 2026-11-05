@@ -14,7 +14,7 @@ Manager aggregates provider read results. The existing [GoreeCloud GitHub Dashbo
 | Integration | Read-only information | Configuration |
 | --- | --- | --- |
 | GitHub | Public repositories, stars, open work-item count (issues and PRs), language, last push, repository links, and five recent public Actions workflow runs | Public without token; optional read-only token with Actions read access for higher API limits |
-| Cloudflare Pages | Up to 500 projects across bounded paginated reads, last reported deployment state, branch and time; incomplete totals are flagged | Cloudflare account ID and **Pages:Read** API token |
+| Cloudflare Pages | Up to 500 projects with bounded pagination, latest deployment **stage**, production/preview environment, branch, and timestamp; incomplete totals are flagged. Stage success is **not** website uptime or live health. | Cloudflare account ID and **Pages:Read** API token |
 | OpenAI | Seven UTC calendar-day cost totals, completion request counts, input/output tokens, daily cost chart | **Organization admin key** (current provider API constraint) |
 | OpenRouter | Per-key spending and limits; optional account credits and 30 completed UTC days of model activity | Dedicated capped API key; optional, separately reviewed management key |
 | Connected sources | Individual connected / error / not configured states | Derived from actual API responses |

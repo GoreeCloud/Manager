@@ -127,8 +127,8 @@ h1{font-size:clamp(32px,3vw,47px);line-height:1.13;letter-spacing:-2px;font-weig
 .table-desc{font-size:11px;max-width:340px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .name-cell{font-weight:740;white-space:nowrap}
 .small-indicator{display:inline-block;height:7px;width:7px;border-radius:50%;background:var(--gc-brand);margin-right:8px}
-.small-indicator.healthy{background:var(--gc-positive)}
-.small-indicator.failed{background:var(--gc-negative)}
+.small-indicator.success{background:var(--gc-positive)}
+.small-indicator.failure{background:var(--gc-negative)}
 .mini-bar{height:7px;background:var(--gc-surface-tonal);border-radius:20px;overflow:hidden;margin-top:14px}
 .mini-bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--gc-brand),var(--gc-accent));border-radius:20px}
 .connection-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}

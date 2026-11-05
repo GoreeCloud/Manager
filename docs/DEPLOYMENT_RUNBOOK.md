@@ -6,7 +6,7 @@
 
 I require Manager to use **Cloudflare Pages Git integration** with the public `GoreeCloud/Manager` repository. Cloudflare explicitly states that a project created with **Direct Upload cannot later be converted to Git integration**. Do not create `goreecloud-manager` using `wrangler pages project create`, `wrangler pages deploy`, or dashboard Direct Upload.
 
-Official docs: [Git integration](https://developers.cloudflare.com/pages/configuration/git-integration/), [Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/), [preview access](https://developers.cloudflare.com/pages/configuration/preview-deployments/).
+Official docs: [Git integration](https://developers.cloudflare.com/pages/configuration/git-integration/), [static HTML Pages build command](https://developers.cloudflare.com/pages/framework-guides/deploy-anything/), [Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/), [preview access](https://developers.cloudflare.com/pages/configuration/preview-deployments/).
 
 ## Verified preflight — November 4, 2026
 
@@ -15,13 +15,13 @@ Official docs: [Git integration](https://developers.cloudflare.com/pages/configu
 - The account listed two Pages projects; available metadata did not confirm an existing Git-integrated project.
 - The GitHub App installation endpoint returned HTTP 403 for the current GitHub token, so the Cloudflare GitHub App installation state remains unverified.
 - The local Cloudflare Pages runtime denied anonymous `/`, `/index.html`, `/app.js`, `/styles.css`, and `/api/overview` with HTTP 401.
-- `manager.goreecloud.com` did not resolve during the earlier read-only network check.
+- Initial DNS checks were inconsistent: the domain was previously unresolved from the development laptop, and later checks resolved it to a **non-global/overlay address**. A subsequent HTTPS probe failed TLS negotiation (HTTP 000, curl exit 35). This is **not** verified public DNS, healthy TLS, or functioning Manager hosting.
 - No live Pages release, owner-only Cloudflare Access policy, provider secrets, or custom-domain routing has been verified.
 
 ## Deployment acceptance sequence
 
 1. Confirm the authorized Cloudflare account and domain-zone ownership; inventory existing routing and protect rollback options.
-2. Review Cloudflare Pages GitHub App permissions and connect `GoreeCloud/Manager` through the official **Git integration** flow. Use `main`, an empty build command, `public` output, and repository root `functions/`.
+2. Review Cloudflare Pages GitHub App permissions and connect `GoreeCloud/Manager` through the official **Git integration** flow. Use production branch `main`, **build command `exit 0`** (Cloudflare's documented recommendation for static HTML with Pages Functions), output directory `public`, and repository root `/` so the checked-in top-level `functions/` directory can be discovered. Verify the actual build includes Pages Functions and that static HTML/CSS/JavaScript and API routes all fail closed before proceeding. A successful static-only deployment is **not** an acceptable Manager release.
 3. Require an owner-only Cloudflare Access self-hosted application for both production custom domain `manager.goreecloud.com` and the production `goreecloud-manager.pages.dev` origin. Enable the **separate preview-deployment Access policy**. Preview protection alone does not protect production Pages or custom domains.
 4. Set `CF_ACCESS_AUD`, `CF_ACCESS_TEAM_DOMAIN` and the strict owner identity allowlist `MANAGER_ALLOWED_EMAILS` in Pages runtime configuration. Until all are correctly configured, the root `functions/_middleware.js` intentionally denies **all static and API requests**, including direct Pages URLs. A valid Access token from a non-allowlisted user returns HTTP 403 even if the upstream Access allow policy is broader than intended.
 5. Verify anonymous, signed-but-not-allowlisted identity and allowlisted owner-identity behavior on each origin. Validate signed JWT claims, issuer, audience, identity email and expiry in live Functions. Only then enable read-only provider integrations.
@@ -45,7 +45,8 @@ The anonymous probe performs six HTTPS GET requests (`/`, `/index.html`, `/app.j
 
 ## Release gate
 
-- [ ] Git-linked Pages deployment configured in the intended account
+- [ ] Git-linked Pages deployment configured in the intended account (`main`, build command `exit 0`, output `public`, repository root `/`)
+- [ ] Pages Functions are actually bundled and active; protected static assets **and** `/api/overview` + `/api/session` deny anonymous traffic after initial deploy
 - [ ] Access policies verified for production custom, production Pages, and preview origins
 - [ ] Unauthorized and authorized browser sessions tested, including expired JWT
 - [ ] API-only read token scopes and secret isolation verified

@@ -19,7 +19,7 @@ export function classifyAnonymousResponse(status, location, requestUrl) {
 export function canonicalBase(input) {
   const url = new URL(input);
   const allowed = url.hostname === "manager.goreecloud.com" ||
-    /^[a-z0-9.-]+\.pages\.dev$/.test(url.hostname);
+    /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)?goreecloud-manager\.pages\.dev$/.test(url.hostname);
   if (url.protocol !== "https:" || !allowed || url.username || url.password ||
       url.port || url.pathname !== "/" || url.search || url.hash) {
     throw new Error("Only approved Manager HTTPS origins are accepted");
@@ -29,8 +29,10 @@ export function canonicalBase(input) {
 
 export async function verifyAnonymousAccess(origin, fetcher = fetch) {
   const base = canonicalBase(origin + (origin.endsWith("/") ? "" : "/"));
-  const rows = [];
-  for (const path of ["/", "/app.js", "/api/overview"]) {
+  const paths = ["/", "/index.html", "/app.js", "/styles.css", "/api/overview", "/api/session"];
+  // Independent anonymous checks run concurrently, with one timeout per route.
+  // Keep the path order stable for deterministic reports.
+  return Promise.all(paths.map(async path => {
     const url = base + path;
     try {
       const response = await fetcher(url, {
@@ -39,12 +41,11 @@ export async function verifyAnonymousAccess(origin, fetcher = fetch) {
       });
       const verdict = classifyAnonymousResponse(response.status, response.headers.get("location"), url);
       void response.body?.cancel().catch(() => {});
-      rows.push({ path, status: response.status, verdict });
+      return { path, status: response.status, verdict };
     } catch {
-      rows.push({ path, status: null, verdict: "unreachable" });
+      return { path, status: null, verdict: "unreachable" };
     }
-  }
-  return rows;
+  }));
 }
 
 export async function main() {

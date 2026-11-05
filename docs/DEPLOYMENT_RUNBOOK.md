@@ -41,7 +41,7 @@ MANAGER_BASE_URL=https://goreecloud-manager.pages.dev npm run verify:anonymous
 
 The Pages project preflight queries the authorized Wrangler CLI with a read-only project-list command and requires verified `GoreeCloud/Manager` Git integration. It prints no provider secrets or unrelated account metadata. An absent or unverified source is not ready; the script never creates a project. A passing result does not confirm the Access policy, DNS/TLS, or a deployed site.
 
-The anonymous probe performs three HTTPS GET requests without session cookies or credentials. It uses manual redirect handling, discards response bodies and **fails** on public HTTP 2xx, unknown redirects, or unreachable paths. Exit status 0 confirms only that the tested paths were denied anonymously; it is **not proof** of every route, authorized-user correctness or complete security.
+The anonymous probe performs six HTTPS GET requests (`/`, `/index.html`, `/app.js`, `/styles.css`, `/api/overview`, and `/api/session`) without session cookies or credentials. It accepts only `manager.goreecloud.com`, `goreecloud-manager.pages.dev`, and single-label preview origins belonging to that specific Pages project; it rejects unrelated `pages.dev` projects. It uses manual redirect handling, discards response bodies and **fails** on public HTTP 2xx, unknown redirects, or unreachable paths. Exit status 0 confirms only that the tested paths were denied anonymously; it is **not proof** of every route, authorized-user correctness or complete security.
 
 ## Release gate
 

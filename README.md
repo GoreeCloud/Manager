@@ -54,7 +54,7 @@ Cloudflare Pages serves `public/`; the root middleware covers static and Functio
    - `GITHUB_READ_TOKEN`: optional read-only token; without it the GitHub connector reads publicly visible repos only.
    - `OPENAI_ADMIN_KEY`: optional org admin key for usage/cost reports; review its broader provider permissions before enabling.
    - `GITHUB_OWNER`: `GoreeCloud` (default).
-4. Verify unauthenticated GET requests to `/`, `/app.js`, `/styles.css`, and `/api/overview` fail closed; verify an authenticated but **non-allowlisted** user receives 403, and only an allowlisted owner returns the shell and JSON. Check each custom, production pages.dev, and preview hostname for direct and alternate-origin bypass.
+4. Verify unauthenticated GET requests to `/`, `/index.html`, `/app.js`, `/styles.css`, `/api/overview`, and `/api/session` fail closed; verify an authenticated but **non-allowlisted** user receives 403, and only an allowlisted owner returns the shell and JSON. Check each custom, production pages.dev, and preview hostname for direct and alternate-origin bypass.
 5. Attach the custom domain `manager.goreecloud.com` to the Pages project using Cloudflare's domain controls. Verify DNS, TLS, Access, browser behavior and mobile layout. **Do not expose an unauthenticated provider-data endpoint.**
 6. Confirm a real deployment, published URL, production read-only permissions and visual quality in a browser before calling the service live.
 

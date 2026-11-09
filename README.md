@@ -116,3 +116,7 @@ Official provider documentation: https://openrouter.ai/docs/api/api-reference/ap
 When a loaded Manager tab receives a focus, visible-state or restored-page event, it hides private dashboard rows immediately and performs `GET /api/session`. The endpoint returns only `{"authenticated":true}` for an authorized, allowlisted Cloudflare Access identity and relies on the root middleware for signed-token and owner-email checks. Invalid responses, non-JSON pages, network errors and expired sessions leave private data cleared until a new authorized refresh. Revision guards prevent old, in-flight overview responses from restoring cleared data.
 
 This is defense-in-depth for an already loaded browser tab. It does **not** revoke active Cloudflare Access sessions or prove instant logout propagation. Real owner and non-owner Access behavior must be tested on every deployed origin. See [session revalidation acceptance](docs/SESSION_REVALIDATION.md).
+
+## License
+
+The source code in this repository is released under the **Apache License, Version 2.0**. See the repository's [LICENSE](LICENSE) for the complete license text. The private GoreeCloud Manager service is not deployed merely because its source is public. Any independently licensed third-party material retains its own applicable terms.

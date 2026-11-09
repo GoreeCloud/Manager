@@ -124,3 +124,7 @@ The source code in this repository is released under the **Apache License, Versi
 ### Partial provider reporting
 
 Connections and overview status distinguish a fully connected provider from **partial data**. For example, an OpenAI cost report can succeed while its completion-usage request fails; available costs remain visible, missing fields stay unavailable (never zero), and the status strip counts partial reports separately. An OpenRouter key report can similarly survive unavailable optional account reporting. A partial status is not proof that all billing periods or sources are complete.
+
+### Local public-repository search
+
+The GitHub view can search the currently returned, verified **public and non-archived** repository inventory by name or programming language, with responsive result counts and an empty-results state. Filtering happens only in the browser; it does not make additional GitHub API requests, query private repositories, or persist search terms. The backend returns the sanitized, bounded inventory (up to four GitHub pages × 100) rather than only the first 12 entries. The overview intentionally retains a concise six-repository preview. When pagination is capped, Manager continues to warn that the inventory may be incomplete.

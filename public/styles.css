@@ -96,6 +96,11 @@ h1{font-size:clamp(32px,3vw,47px);line-height:1.13;letter-spacing:-2px;font-weig
 .panel-title{margin:0;font-size:17px;letter-spacing:-.4px}
 .panel-caption{color:var(--gc-text-soft);font-size:12px;margin:4px 0 0}
 .panel-trailing{font-size:11px;color:var(--gc-brand);border-radius:10px;padding:6px 8px;background:var(--gc-surface-tonal)}
+.repo-search-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:-6px 0 18px}
+.repo-search-label{display:block;min-width:0;flex:1 1 220px;font-size:12px;font-weight:650;color:var(--gc-text-soft)}
+.repo-search-input{display:block;width:100%;margin-top:6px;padding:10px 12px;border:1px solid var(--gc-outline);border-radius:12px;background:var(--gc-surface);color:var(--gc-text);font:inherit}
+.repo-search-input:focus-visible{outline:2px solid var(--gc-brand);outline-offset:2px}
+.repo-search-count{font-size:12px;color:var(--gc-text-soft);font-variant-numeric:tabular-nums}
 .chart{min-height:225px;display:flex;gap:10px;align-items:end;padding:10px 3px 1px}
 .chart-col{flex:1;height:200px;display:flex;flex-direction:column;align-items:center;justify-content:end;gap:9px;min-width:0}
 .chart-value{font-size:10px;color:var(--gc-text-soft)}

@@ -1,4 +1,5 @@
 import { money } from "./format.js";
+import { filterRepositories } from "./filter.js";
 
 const $ = selector => document.querySelector(selector);
 const dashboard = $("#dashboard");
@@ -7,6 +8,7 @@ const notice = $("#notice");
 let snapshot = null;
 let controller = null;
 let dataRevision = 0;
+let repoFilter = "";
 const names = {
   github: ["GitHub", "Code & repositories", "⌘", "https://github.com/GoreeCloud"],
   cloudflare: ["Cloudflare Pages", "Deployments & projects", "▤", "https://dash.cloudflare.com/"],
@@ -126,14 +128,52 @@ function table(headers, rows, emptyTitle, emptyDescription) {
 function repositoryPanel(limit) {
   const panel = makePanel("Repositories", "Most recently updated public repositories");
   const gh = source("github").data;
-  const repos = (gh?.repositories || []).slice(0, limit || 12);
-  panel.append(table(["Repository", "Language", "Open work", "Last push"], repos.map(repo => [
-    append(element("div", "name-cell"), linkNode(repo.name, repo.url, "https://github.com/")),
-    repo.language || "—",
-    fmt(repo.openWorkItems),
-    when(repo.updatedAt),
-  ]), "No repositories available", "GitHub is not connected or returned no public repositories."));
-  if (gh?.truncated) panel.append(element("p", "panel-caption", "Showing a capped subset; totals may be incomplete."));
+  const repos = gh?.repositories || [];
+  const tableHost = element("div", "");
+  const draw = query => {
+    const visible = limit ? repos.slice(0, limit) : filterRepositories(repos, query);
+    tableHost.replaceChildren(table(["Repository", "Language", "Open work", "Last push"],
+      visible.map(repo => [
+        append(element("div", "name-cell"), linkNode(repo.name, repo.url, "https://github.com/")),
+        repo.language || "—",
+        fmt(repo.openWorkItems),
+        when(repo.updatedAt),
+      ]),
+      "No matching repositories",
+      repos.length ? "Try searching by a different repository name or language." :
+        "GitHub is not connected or returned no public repositories."));
+    return visible.length;
+  };
+  if (!limit && gh) {
+    const row = element("div", "repo-search-row");
+    const label = element("label", "repo-search-label", "Search public repositories");
+    const input = element("input", "repo-search-input");
+    input.id = "repository-search";
+    input.type = "search";
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    input.placeholder = "Repository name or language";
+    input.value = repoFilter;
+    const count = element("output", "repo-search-count");
+    count.setAttribute("aria-live", "polite");
+    count.setAttribute("for", input.id);
+    label.append(input);
+    const update = () => {
+      count.textContent = draw(repoFilter) + " of " + repos.length + " returned repositories";
+    };
+    input.addEventListener("input", () => {
+      repoFilter = input.value.slice(0, 100);
+      update();
+    });
+    append(row, label, count);
+    panel.append(row, tableHost);
+    update();
+  } else {
+    panel.append(tableHost);
+    draw("");
+  }
+  if (gh?.truncated) panel.append(element("p", "panel-caption",
+    "This is a bounded public-repository inventory; the total may be incomplete."));
   return panel;
 }
 function workflowPanel() {
@@ -261,7 +301,7 @@ function render() {
     const split = element("div", "split-grid"); append(split, chart(), providersPanel());
     append(content, sectionHeading("Your workspace"), split, repositoryPanel(6));
   } else if (view === "github") {
-    append(content, sectionHeading("GitHub repositories"), repositoryPanel(12), sectionHeading("GitHub Actions"), workflowPanel());
+    append(content, sectionHeading("GitHub repositories"), repositoryPanel(), sectionHeading("GitHub Actions"), workflowPanel());
   } else if (view === "deployments") {
     append(content, sectionHeading("Cloudflare Pages"), deploymentPanel());
   } else if (view === "usage") {

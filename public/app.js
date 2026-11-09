@@ -41,13 +41,15 @@ function makePanel(title, subtitle) {
   return panel;
 }
 function stateLabel(status) {
-  return status === "connected" ? "Connected" : status === "error" ? "Unavailable" : "Not configured";
+  return status === "connected" ? "Connected" : status === "partial" ? "Partial data" :
+    status === "error" ? "Unavailable" : "Not configured";
 }
 function sourceRow(key) {
   const s = source(key), meta = names[key];
   const row = element("div", "source-row");
   const main = element("div", "source-main");
-  append(main, element("strong", "", meta[0]), element("small", "", s.message || meta[1]));
+  append(main, element("strong", "", meta[0]),
+    element("small", "", s.message || (s.status === "partial" ? "Some provider metrics are incomplete" : meta[1])));
   append(row, element("div", "source-icon", meta[2]), main,
     element("span", "status-tag " + s.status, stateLabel(s.status)));
   return row;
@@ -287,7 +289,9 @@ async function load() {
     if (!Array.isArray(result.sources) || result.readOnly !== true) throw new Error("Unexpected dashboard response.");
     snapshot = result;
     const connected = result.sources.filter(s => s.status === "connected").length;
-    $("#overall-status").textContent = connected + " of " + result.sources.length + " sources connected";
+    const partial = result.sources.filter(s => s.status === "partial").length;
+    $("#overall-status").textContent = connected + " of " + result.sources.length +
+      " sources connected" + (partial ? " · " + partial + " partial" : "");
     $("#sync-time").textContent = "Last checked " + when(result.generatedAt);
     if (connected < result.sources.length) {
       notice.hidden = false;
@@ -333,7 +337,9 @@ async function validateVisibleSession() {
   if (verified) {
     snapshot = previous;
     const connected = previous.sources.filter(s => s.status === "connected").length;
-    $("#overall-status").textContent = connected + " of " + previous.sources.length + " sources connected";
+    const partial = previous.sources.filter(s => s.status === "partial").length;
+    $("#overall-status").textContent = connected + " of " + previous.sources.length +
+      " sources connected" + (partial ? " · " + partial + " partial" : "");
     $("#sync-time").textContent = "Last checked " + when(previous.generatedAt);
     if (connected < previous.sources.length) {
       notice.hidden = false;

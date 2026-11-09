@@ -114,7 +114,7 @@ h1{font-size:clamp(32px,3vw,47px);line-height:1.13;letter-spacing:-2px;font-weig
 .status-tag{font-size:10px;text-transform:capitalize;color:var(--gc-text-soft);padding:5px 9px}
 .status-tag.connected{color:var(--gc-positive)}
 .status-tag.error{color:var(--gc-negative)}
-.status-tag.unconfigured{color:#e3b473}
+.status-tag.unconfigured,.status-tag.partial{color:#e3b473}
 .list-panel{margin:0 0 30px}
 .table-wrap{width:100%;overflow-x:auto}
 .data-table{border-collapse:collapse;width:100%;text-align:left;font-size:12px}

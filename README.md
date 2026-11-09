@@ -120,3 +120,7 @@ This is defense-in-depth for an already loaded browser tab. It does **not** revo
 ## License
 
 The source code in this repository is released under the **Apache License, Version 2.0**. See the repository's [LICENSE](LICENSE) for the complete license text. The private GoreeCloud Manager service is not deployed merely because its source is public. Any independently licensed third-party material retains its own applicable terms.
+
+### Partial provider reporting
+
+Connections and overview status distinguish a fully connected provider from **partial data**. For example, an OpenAI cost report can succeed while its completion-usage request fails; available costs remain visible, missing fields stay unavailable (never zero), and the status strip counts partial reports separately. An OpenRouter key report can similarly survive unavailable optional account reporting. A partial status is not proof that all billing periods or sources are complete.

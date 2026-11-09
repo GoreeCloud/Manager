@@ -13,3 +13,5 @@
 Report vulnerabilities privately to the repository owner. Do not include access tokens or personal data in public issues.
 
 - **OpenRouter:** Inference-capable standard keys should be capped; optional management keys have broader account privileges. Only fixed GET endpoints are called, and keys and identifying response fields are never returned to the browser.
+
+- **Immutable upstream transport:** The shared provider JSON reader enforces HTTPS, GET-only requests, no redirects, omitted cookies, bounded JSON response sizes, and an internal abort signal even if future adapter options request unsafe overrides. Provider adapters still use fixed, trusted endpoints and scoped runtime secrets.

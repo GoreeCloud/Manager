@@ -28,6 +28,12 @@ Official docs: [Git integration](https://developers.cloudflare.com/pages/configu
 6. Use a Pages:Read Cloudflare token, public GitHub metadata or limited GitHub read token. **OpenAI organization admin keys are more privileged than this application**; enable only after an explicit scope/risk review and encrypted-secret provisioning.
 7. Bind the requested custom domain and validate DNS/TLS, accessibility, security headers, error handling and private data leakage checks, then document verified deployment and rollback.
 
+## Mandatory Pages Functions routing and quota safety
+
+The source contains `public/_routes.json` with `include: ["/*"]` and an empty `exclude` list, so **static pages, JavaScript, CSS, and API paths** all invoke root `functions/_middleware.js`. This is intentional: all protected requests count toward Pages Functions limits. Do **not** exclude static paths to save invocations or rely on static-file secrecy alone.
+
+Before enabling a live release, inspect **Workers & Pages → Manager project → Settings → Runtime → Fail open / closed** and select **Fail closed**, where the setting applies. Cloudflare documents that **Fail open** can serve static assets without running authentication Functions after the free-tier Functions request limit is exhausted. Fail closed favors a temporary error over an authorization bypass. Verify the live configuration and access-denied behavior; **local unit tests cannot confirm the cloud-side quota-failure setting**. See [Cloudflare Pages Functions routing and fail modes](https://developers.cloudflare.com/pages/functions/routing/#fail-open--closed).
+
 ## Read-only anonymous-access verification
 
 ```bash
@@ -46,7 +52,8 @@ The anonymous probe performs six HTTPS GET requests (`/`, `/index.html`, `/app.j
 ## Release gate
 
 - [ ] Git-linked Pages deployment configured in the intended account (`main`, build command `exit 0`, output `public`, repository root `/`)
-- [ ] Pages Functions are actually bundled and active; protected static assets **and** `/api/overview` + `/api/session` deny anonymous traffic after initial deploy
+- [ ] Pages Functions are actually bundled and active, with `public/_routes.json` covering **every** path and no static exclusions; protected static assets **and** `/api/overview` + `/api/session` deny anonymous traffic after initial deploy
+- [ ] Cloudflare Pages Functions request-limit behavior is configured **Fail closed** where applicable, and no quota-exhaustion fail-open bypass can expose private static assets
 - [ ] Access policies verified for production custom, production Pages, and preview origins
 - [ ] Unauthorized and authorized browser sessions tested, including expired JWT
 - [ ] API-only read token scopes and secret isolation verified
